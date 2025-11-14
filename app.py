@@ -58,13 +58,17 @@ class MultiContextSwinRegressor(nn.Module):
 # Load model weights
 @st.cache_resource
 def load_model():
-    model_path = "swin_regressor.pt"
+    model_path = "train.pt"
     if not os.path.exists(model_path):
         st.error(f"Model file not found: {model_path}. Please upload it.")
         st.stop()
+
+    checkpoint = torch.load(model_path, map_location="cpu")
     model = MultiContextSwinRegressor(context_embeddings)
-    model.load_state_dict(torch.load(model_path, map_location="cpu"))
+    model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
+
+    st.write(f"Model loaded from epoch: {checkpoint.get('epoch', 'Unknown')}")
     return model
 
 model = load_model()
@@ -82,12 +86,12 @@ def preprocess_image(image):
     return image.unsqueeze(0)  # [1, 3, 512, 512]
 
 # Streamlit UI
-st.title("CLASS 2.0 - Batch Image Scoring")
+st.title("CLASS 2.0")
 uploaded_files = st.file_uploader("Upload landscape images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
 if uploaded_files:
-    # Prepare table header
-    table_text = "Image Name\t" + "\t".join(dimension_names) + "\n"
+    # Prepare CSV header
+    table_text = "Image Name," + ",".join(dimension_names) + "\n"
 
     for uploaded_file in uploaded_files:
         image = Image.open(uploaded_file)
@@ -95,12 +99,23 @@ if uploaded_files:
 
         with torch.no_grad():
             predicted_scores = model(image_tensor)
-            predicted_scores = predicted_scores.squeeze().numpy() * 6.0  # scale back to 0–6
+            predicted_scores = predicted.squeeze().numpy() * 6.0  # scale back to 0–6
 
         # Append row to table
-        row = uploaded_file.name + "\t" + "\t".join([f"{score:.2f}" for score in predicted_scores]) + "\n"
+        row = uploaded_file.name + "," + ",".join([f"{score:.2f}" for score in predicted_scores]) + "\n"
         table_text += row
 
     # Display copy-paste table
-    st.subheader("Copy-Paste Table")
+    st.subheader("Copy-Paste Table (Excel Friendly)")
     st.text_area("Results", table_text, height=400)
+
+    # Add Copy button
+    st.button("Copy Table to Clipboard", on_click=lambda: st.write("✅ Copy"))
+
+    # Optional: Download button
+    st.download_button(
+        label="Download as CSV",
+        data=table_text,
+        file_name="predictions.csv",
+        mime="text/csv"
+    )
