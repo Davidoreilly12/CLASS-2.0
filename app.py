@@ -89,8 +89,9 @@ if uploaded_files:
 
         image_tensor = preprocess_image(image)
 
-       _scores = model(image_tensor)
-            predicted_scores = predicted_scores.squeeze().numpy() * 6.0  # scale back to 0–6
+    with torch.no_grad():
+        predicted_scores = model(image_tensor)
+        predicted_scores = predicted_scores.squeeze().numpy() * 6.0  # scale back to 0–6
 
         # Display results
         st.subheader(f"Predicted Scores for {uploaded_file.name}")
