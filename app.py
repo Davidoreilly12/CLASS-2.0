@@ -58,7 +58,7 @@ class MultiContextSwinRegressor(nn.Module):
 # Load model weights
 @st.cache_resource
 def load_model():
-    model_path = "train.pt"
+    model_path = "trained.pt"
     if not os.path.exists(model_path):
         st.error(f"Model file not found: {model_path}. Please upload it.")
         st.stop()
