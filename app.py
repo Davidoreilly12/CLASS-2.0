@@ -59,7 +59,7 @@ class MultiContextSwinRegressor(nn.Module):
 @st.cache_resource
 def load_model():
     model = MultiContextSwinRegressor(context_embeddings)
-    model.load_state_dict(torch.load("swin_regressor_lambda01.pt", map_location="cpu"))
+    model.load_state_dict(torch.load("swin_regressor.pt", map_location="cpu"))
     model.eval()
     return model
 
