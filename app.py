@@ -58,8 +58,12 @@ class MultiContextSwinRegressor(nn.Module):
 # Load model weights
 @st.cache_resource
 def load_model():
+    model_path = "swin_regressor.pt"
+    if not os.path.exists(model_path):
+        st.error(f"Model file not found: {model_path}. Please upload it.")
+        st.stop()
     model = MultiContextSwinRegressor(context_embeddings)
-    model.load_state_dict(torch.load("swin_regressor.pt", map_location="cpu"))
+    model.load_state_dict(torch.load(model_path, map_location="cpu"))
     model.eval()
     return model
 
@@ -78,31 +82,25 @@ def preprocess_image(image):
     return image.unsqueeze(0)  # [1, 3, 512, 512]
 
 # Streamlit UI
-st.title("CLASS 2.0 - Multi Image Processing")
+st.title("CLASS 2.0 - Batch Image Scoring")
 uploaded_files = st.file_uploader("Upload landscape images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
 if uploaded_files:
-    results_text = ""
-    for idx, uploaded_file in enumerate(uploaded_files, start=1):
-        image = Image.open(uploaded_file)
-        st.image(image, caption=f"Image {idx}: {uploaded_file.name}", use_column_width=True)
+    # Prepare table header
+    table_text = "Image Name\t" + "\t".join(dimension_names) + "\n"
 
+    for uploaded_file in uploaded_files:
+        image = Image.open(uploaded_file)
         image_tensor = preprocess_image(image)
 
-    with torch.no_grad():
-        predicted_scores = model(image_tensor)
-        predicted_scores = predicted_scores.squeeze().numpy() * 6.0  # scale back to 0–6
+        with torch.no_grad():
+            predicted_scores = model(image_tensor)
+            predicted_scores = predicted_scores.squeeze().numpy() * 6.0  # scale back to 0–6
 
-        # Display results
-        st.subheader(f"Predicted Scores for {uploaded_file.name}")
-        for dim, score in zip(dimension_names, predicted_scores):
-            st.write(f"**{dim}**: {score:.2f}")
+        # Append row to table
+        row = uploaded_file.name + "\t" + "\t".join([f"{score:.2f}" for score in predicted_scores]) + "\n"
+        table_text += row
 
-        # Append to copy-paste text
-        results_text += f"\nImage {idx}: {uploaded_file.name}\n"
-        for dim, score in zip(dimension_names, predicted_scores):
-            results_text += f"{dim}: {score:.2f}\n"
-        results_text += "-" * 40 + "\n"
-
-    # Show copy-paste block
-    st.text_area("Copy-Paste Results", results_text, height=400)
+    # Display copy-paste table
+    st.subheader("Copy-Paste Table")
+    st.text_area("Results", table_text, height=400)
