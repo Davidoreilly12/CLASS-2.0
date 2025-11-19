@@ -64,10 +64,11 @@ def load_model():
     model_path = hf_hub_download(repo_id=HF_REPO, filename="swin_regressor.pt")
     checkpoint = torch.load(model_path, map_location="cpu")
     model = MultiContextSwinRegressor(context_embeddings)
-    model.load_state_dict(checkpoint['model_state_dict'])
+    model.load_state_dict(checkpoint)  # ✅ Directly load state dict
     model.eval()
-    st.write(f"Model loaded from epoch: {checkpoint.get('epoch', 'Unknown')}")
+    st.write("Model loaded successfully!")
     return model
+
 
 model = load_model()
 
@@ -100,4 +101,5 @@ if uploaded_files:
 
     st.subheader("Copy-Paste Table (Excel Friendly)")
     st.text_area("Results", table_text, height=400)
+
     st.download_button("Download as CSV", table_text, "predictions.csv", "text/csv")
