@@ -21,7 +21,7 @@ HF_REPO = "DOReilly2/swin_regressor"  # Replace with your repo name
 def load_context_embeddings():
     embeddings = {}
     for dim in dimension_names:
-        filename = f"context_embeddings/{dim.replace(' ', '_')}.pt"
+        filename = f"context_embeddings/{dim}.pt"
         path = hf_hub_download(repo_id=HF_REPO, filename=filename)
         embeddings[dim] = torch.load(path, map_location="cpu")
     return embeddings
@@ -103,4 +103,5 @@ if uploaded_files:
     st.text_area("Results", table_text, height=400)
 
     st.download_button("Download as CSV", table_text, "predictions.csv", "text/csv")
+
 
