@@ -63,14 +63,27 @@ class MultiContextSwinRegressor(nn.Module):
 def load_model():
     model_path = hf_hub_download(repo_id=HF_REPO, filename="swin_regressor.pt")
     checkpoint = torch.load(model_path, map_location="cpu")
+    
     model = MultiContextSwinRegressor(context_embeddings)
-    model.load_state_dict(checkpoint)  # ✅ Directly load state dict
+    model.load_state_dict(checkpoint["model_state_dict"], strict=True)
     model.eval()
-    st.write("Model loaded successfully!")
-    return model
+
+    scaler = TargetScaler(
+        mean=checkpoint["scaler_mean"],
+        std=checkpoint["scaler_std"]
+    )
+
+    return model, scaler
 
 
-model = load_model()
+model, scaler = load_model()
+
+...
+
+with torch.no_grad():
+    preds_scaled = model(image_tensor)          # predictions in z-score space
+    preds = scaler.inverse_transform(preds_scaled)  
+    predicted_scores = preds.squeeze().numpy()  # real 0–6 scores
 
 # Image transform
 val_transform = transforms.Compose([
@@ -103,5 +116,6 @@ if uploaded_files:
     st.text_area("Results", table_text, height=400)
 
     st.download_button("Download as CSV", table_text, "predictions.csv", "text/csv")
+
 
 
