@@ -2,14 +2,13 @@ import streamlit as st
 import torch
 import torch.nn as nn
 from torchvision import transforms
-from torchvision.models import swin_v2_b
+from torchvision.models import swin_v2_b, Swin_V2_B_Weights
 from PIL import Image
-import numpy as np
 from huggingface_hub import hf_hub_download
 
 # ---------------- CONFIG ----------------
 HF_REPO = "DOReilly2/swin_regressor"  # Hugging Face repo
-DEVICE = "cpu"  # use "cuda" if available
+DEVICE = "cpu"  # or "cuda" if available
 
 dimension_labels = [
     "Layers of the Landscape_embedding",
@@ -20,16 +19,6 @@ dimension_labels = [
     "Archetypal Elements_embedding",
     "Character of Peace and Silence_embedding"
 ]
-
-filename_map = {
-    "Layers of the Landscape": "Layers of the Landscape_embedding.pt",
-    "Landform": "Landform_embedding.pt",
-    "Biodiversity": "Biodiversity_embedding.pt",
-    "Color and Light": "Color and Light_embedding.pt",
-    "Compatibility": "Compatibility_embedding.pt",
-    "Archetypal Elements": "Archetypal Elements_embedding.pt",
-    "Character of Peace and Silence": "Character of Peace and Silence_embedding.pt"
-}
 
 # ---------------- UTILITIES ----------------
 def preprocess_image(image: Image.Image) -> torch.Tensor:
@@ -48,34 +37,28 @@ def preprocess_image(image: Image.Image) -> torch.Tensor:
 def load_context_embeddings():
     embeddings = {}
     for label in dimension_labels:
-        filename = f"context_embeddings/{label}.pt"
-        path = hf_hub_download(repo_id=HF_REPO, filename=filename)
+        path = hf_hub_download(repo_id=HF_REPO, filename=f"context_embeddings/{label}.pt")
         emb = torch.load(path, map_location="cpu")
         embeddings[label] = emb.squeeze()
     return embeddings
 
 context_embeddings = load_context_embeddings()
 
-from torchvision.models import swin_v2_b, Swin_V2_B_Weights
-from torchvision.models import swin_v2_b, Swin_V2_B_Weights
-
-
-# Remove the classifier head
-self.swin.head = nn.Identity()
+# ---------------- MODEL ----------------
 class MultiContextSwinRegressor(nn.Module):
     def __init__(self, context_embeddings: dict):
         super().__init__()
-        # Use explicit weights object
-        # Use feature-extraction weights
-        weights = Swin_V2_B_Weights.IMAGENET1K_V1
-        self.swin = swin_v2_b(weights=weights, progress=True)
-        
-        # keep context embeddings
+        # SwinV2 pretrained feature extractor
+        self.swin = swin_v2_b(weights=Swin_V2_B_Weights.IMAGENET1K_V1)
+        self.swin.head = nn.Identity()  # remove classifier head
+
+        # context embeddings
         self.context_embeddings = nn.ParameterDict({
             label: nn.Parameter(context_embeddings[label].float().unsqueeze(0), requires_grad=False).squeeze(0)
             for label in context_embeddings
         })
 
+        # per-dimension fusion heads
         self.fusion_heads = nn.ModuleDict({
             label: nn.Sequential(
                 nn.Linear(1024 + self.context_embeddings[label].shape[0], 256),
@@ -87,6 +70,7 @@ class MultiContextSwinRegressor(nn.Module):
         })
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
+        # extract image features
         image_feat = self.swin(image)  # [B, 1024]
         outputs = []
         for label in self.context_embeddings:
@@ -106,13 +90,10 @@ def load_model():
     model.load_state_dict(state_dict, strict=True)
     model.to(DEVICE)
     model.eval()
+    st.info("Model loaded successfully (raw state_dict).")
+    return model
 
-    # No scaler stored (raw state_dict)
-    scaler = None
-    st.info("Model loaded (raw state_dict, no scaler).")
-    return model, scaler
-
-model, scaler = load_model()
+model = load_model()
 
 # ---------------- STREAMLIT UI ----------------
 st.title("CLASS 2.0")
@@ -131,7 +112,7 @@ if uploaded_files:
 
         with torch.no_grad():
             preds = model(image_tensor)  # [1, D]
-            predicted_scores = preds.squeeze(0).cpu().numpy()  # [D] numpy array
+            predicted_scores = preds.squeeze(0).cpu().numpy()  # numpy array
 
         # Build CSV row
         row = uploaded_file.name + "," + ",".join([f"{float(score):.2f}" for score in predicted_scores]) + "\n"
@@ -139,10 +120,7 @@ if uploaded_files:
 
     st.subheader("Copy-Paste Table (Excel Friendly)")
     st.text_area("Results", table_text, height=400)
-
     st.download_button("Download as CSV", table_text, "predictions.csv", "text/csv")
-
-
 
 
 
