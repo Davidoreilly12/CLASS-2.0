@@ -57,13 +57,18 @@ def load_context_embeddings():
 context_embeddings = load_context_embeddings()
 
 from torchvision.models import swin_v2_b, Swin_V2_B_Weights
+from torchvision.models import swin_v2_b, Swin_V2_B_Weights
 
+
+# Remove the classifier head
+self.swin.head = nn.Identity()
 class MultiContextSwinRegressor(nn.Module):
     def __init__(self, context_embeddings: dict):
         super().__init__()
         # Use explicit weights object
-        self.swin = swin_v2_b(weights=Swin_V2_B_Weights.IMAGENET1K_V1)
-        self.swin.head = nn.Identity()
+        # Use feature-extraction weights
+        weights = Swin_V2_B_Weights.IMAGENET1K_V1
+        self.swin = swin_v2_b(weights=weights, progress=True)
         
         # keep context embeddings
         self.context_embeddings = nn.ParameterDict({
@@ -136,6 +141,7 @@ if uploaded_files:
     st.text_area("Results", table_text, height=400)
 
     st.download_button("Download as CSV", table_text, "predictions.csv", "text/csv")
+
 
 
 
