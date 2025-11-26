@@ -110,7 +110,7 @@ def load_model():
 model, scaler = load_model()
 
 # ---------------- STREAMLIT UI ----------------
-st.title("CLASS 2.0 — Landscape Contemplative Scorer")
+st.title("CLASS 2.0")
 
 uploaded_files = st.file_uploader(
     "Upload landscape images", type=["jpg", "jpeg", "png"], accept_multiple_files=True
@@ -136,6 +136,7 @@ if uploaded_files:
     st.text_area("Results", table_text, height=400)
 
     st.download_button("Download as CSV", table_text, "predictions.csv", "text/csv")
+
 
 
 
