@@ -56,14 +56,16 @@ def load_context_embeddings():
 
 context_embeddings = load_context_embeddings()
 
-# ---------------- MODEL DEFINITION ----------------
+from torchvision.models import swin_v2_b, Swin_V2_B_Weights
+
 class MultiContextSwinRegressor(nn.Module):
     def __init__(self, context_embeddings: dict):
         super().__init__()
-        self.swin = swin_v2_b(weights="IMAGENET1K_V1")
+        # Use explicit weights object
+        self.swin = swin_v2_b(weights=Swin_V2_B_Weights.IMAGENET1K_V1)
         self.swin.head = nn.Identity()
-
-        # Keep names exactly the same as checkpoint
+        
+        # keep context embeddings
         self.context_embeddings = nn.ParameterDict({
             label: nn.Parameter(context_embeddings[label].float().unsqueeze(0), requires_grad=False).squeeze(0)
             for label in context_embeddings
@@ -79,6 +81,15 @@ class MultiContextSwinRegressor(nn.Module):
             for label in self.context_embeddings
         })
 
+    def forward(self, image: torch.Tensor) -> torch.Tensor:
+        image_feat = self.swin(image)  # [B, 1024]
+        outputs = []
+        for label in self.context_embeddings:
+            context = self.context_embeddings[label].expand(image_feat.size(0), -1)
+            fused = torch.cat([image_feat, context], dim=1)
+            score = self.fusion_heads[label](fused)
+            outputs.append(score)
+        return torch.cat(outputs, dim=1)
 
 # ---------------- LOAD MODEL ----------------
 @st.cache_resource
@@ -125,6 +136,7 @@ if uploaded_files:
     st.text_area("Results", table_text, height=400)
 
     st.download_button("Download as CSV", table_text, "predictions.csv", "text/csv")
+
 
 
 
