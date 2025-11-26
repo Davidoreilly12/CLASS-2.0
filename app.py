@@ -9,8 +9,8 @@ from huggingface_hub import hf_hub_download
 
 # Define contemplative dimensions
 dimension_names = [
-    "Layers of the Landscape", "Landform", "Biodiversity", "Color and Light",
-    "Compatibility", "Archetypal Elements", "Character of Peace and Silence"
+    "Layers of the Landscape_embedding", "Landform_embedding", "Biodiversity_embedding", "Color and Light_embedding",
+    "Compatibility_embedding", "Archetypal Elements_embedding", "Character of Peace and Silence_embedding"
 ]
 
 # Hugging Face repo
@@ -21,7 +21,7 @@ HF_REPO = "DOReilly2/swin_regressor"  # Replace with your repo name
 def load_context_embeddings():
     embeddings = {}
     for dim in dimension_names:
-        filename = f"context_embeddings/{dim.replace(' ', '_').lower()}.pt"
+        filename = f"context_embeddings/{dim.replace(' ', '_')}.pt"
         path = hf_hub_download(repo_id=HF_REPO, filename=filename)
         embeddings[dim] = torch.load(path, map_location="cpu")
     return embeddings
@@ -103,3 +103,4 @@ if uploaded_files:
     st.text_area("Results", table_text, height=400)
 
     st.download_button("Download as CSV", table_text, "predictions.csv", "text/csv")
+
