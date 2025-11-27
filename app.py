@@ -112,7 +112,7 @@ if uploaded_files:
 
         with torch.no_grad():
             preds = model(image_tensor)  # [1, D]
-            predicted_scores = preds.squeeze(0).cpu().numpy()  # numpy array
+            predicted_scores = preds.squeeze(0).cpu().numpy()*6  # numpy array
 
         # Build CSV row
         row = uploaded_file.name + "," + ",".join([f"{float(score):.2f}" for score in predicted_scores]) + "\n"
@@ -121,6 +121,7 @@ if uploaded_files:
     st.subheader("Copy-Paste Table (Excel Friendly)")
     st.text_area("Results", table_text, height=400)
     st.download_button("Download as CSV", table_text, "predictions.csv", "text/csv")
+
 
 
 
