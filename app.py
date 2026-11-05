@@ -1,4 +1,9 @@
 
+# ============================================================
+# CLASS 2.0 | NEUROLANDSCAPE
+# Multilingual AI Landscape Assessment
+# ============================================================
+
 import streamlit as st
 import torch
 import torch.nn as nn
@@ -6,28 +11,30 @@ from torchvision import transforms
 from torchvision.models import swin_v2_b, Swin_V2_B_Weights
 from PIL import Image
 from huggingface_hub import hf_hub_download
-from pathlib import Path
+from io import BytesIO
+import requests
 import pandas as pd
 import csv
 import io
+
 
 # ============================================================
 # 1. CONFIGURATION
 # ============================================================
 
-st.set_page_config(
-    page_title="CLASS 2.0 | NeuroLandscape",
-    page_icon="🌿",
-    layout="wide"
-)
-
 HF_REPO = "DOReilly2/swin_regressor"
 DEVICE = "cpu"
 
-BASE_DIR = Path(__file__).parent
-LOGO_PATH = BASE_DIR / "neurolandscape_logo.png"
+# GitHub-hosted NeuroLandscape logo
+# Replace with your actual GitHub username and repository.
 
-# Original model identifiers: DO NOT TRANSLATE
+LOGO_URL = (
+    "https://raw.githubusercontent.com/"
+    "davidoreilly12/CLASS-2.0/"
+    "main/neurolandscape_logo.png"
+)
+
+# Original model identifiers - DO NOT TRANSLATE
 
 dimension_labels = [
     "Layers of the Landscape_embedding",
@@ -41,13 +48,41 @@ dimension_labels = [
 
 
 # ============================================================
-# 2. MULTILINGUAL TRANSLATION DICTIONARY
+# 2. LOAD NEUROLANDSCAPE LOGO
+# ============================================================
+
+try:
+    response = requests.get(LOGO_URL, timeout=15)
+    response.raise_for_status()
+
+    logo_image = Image.open(
+        BytesIO(response.content)
+    ).convert("RGBA")
+
+except Exception as e:
+    logo_image = None
+    logo_error = str(e)
+
+
+# ============================================================
+# 3. STREAMLIT PAGE CONFIGURATION
+# ============================================================
+
+st.set_page_config(
+    page_title="CLASS 2.0 | NeuroLandscape",
+    page_icon=logo_image if logo_image is not None else "🌿",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+
+# ============================================================
+# 4. MULTILINGUAL TRANSLATIONS
 # ============================================================
 
 TRANSLATIONS = {
 
     "English": {
-        "title": "CLASS 2.0",
         "subtitle": "Computational Landscape Assessment",
         "description": "An AI-powered system for assessing landscape quality.",
         "upload": "Upload landscape images",
@@ -75,7 +110,6 @@ TRANSLATIONS = {
     },
 
     "French": {
-        "title": "CLASS 2.0",
         "subtitle": "Évaluation computationnelle du paysage",
         "description": "Un système d'intelligence artificielle pour évaluer la qualité des paysages.",
         "upload": "Télécharger des images de paysages",
@@ -103,7 +137,6 @@ TRANSLATIONS = {
     },
 
     "Italian": {
-        "title": "CLASS 2.0",
         "subtitle": "Valutazione computazionale del paesaggio",
         "description": "Un sistema basato sull'intelligenza artificiale per valutare la qualità del paesaggio.",
         "upload": "Carica immagini del paesaggio",
@@ -131,7 +164,6 @@ TRANSLATIONS = {
     },
 
     "German": {
-        "title": "CLASS 2.0",
         "subtitle": "Computergestützte Landschaftsbewertung",
         "description": "Ein KI-gestütztes System zur Bewertung der Landschaftsqualität.",
         "upload": "Landschaftsbilder hochladen",
@@ -159,7 +191,6 @@ TRANSLATIONS = {
     },
 
     "Swedish": {
-        "title": "CLASS 2.0",
         "subtitle": "Datorbaserad landskapsbedömning",
         "description": "Ett AI-baserat system för bedömning av landskapskvalitet.",
         "upload": "Ladda upp landskapsbilder",
@@ -187,7 +218,6 @@ TRANSLATIONS = {
     },
 
     "Chinese": {
-        "title": "CLASS 2.0",
         "subtitle": "计算景观评估",
         "description": "一个基于人工智能的景观质量评估系统。",
         "upload": "上传景观图像",
@@ -215,7 +245,6 @@ TRANSLATIONS = {
     },
 
     "Korean": {
-        "title": "CLASS 2.0",
         "subtitle": "컴퓨터 기반 경관 평가",
         "description": "인공지능 기반 경관 품질 평가 시스템입니다.",
         "upload": "경관 이미지 업로드",
@@ -243,7 +272,6 @@ TRANSLATIONS = {
     },
 
     "Spanish": {
-        "title": "CLASS 2.0",
         "subtitle": "Evaluación computacional del paisaje",
         "description": "Un sistema basado en inteligencia artificial para evaluar la calidad del paisaje.",
         "upload": "Subir imágenes del paisaje",
@@ -271,7 +299,6 @@ TRANSLATIONS = {
     },
 
     "Portuguese": {
-        "title": "CLASS 2.0",
         "subtitle": "Avaliação computacional da paisagem",
         "description": "Um sistema baseado em inteligência artificial para avaliar a qualidade da paisagem.",
         "upload": "Carregar imagens da paisagem",
@@ -299,7 +326,6 @@ TRANSLATIONS = {
     },
 
     "Danish": {
-        "title": "CLASS 2.0",
         "subtitle": "Computerbaseret landskabsvurdering",
         "description": "Et AI-baseret system til vurdering af landskabskvalitet.",
         "upload": "Upload landskabsbilleder",
@@ -327,7 +353,6 @@ TRANSLATIONS = {
     },
 
     "Dutch": {
-        "title": "CLASS 2.0",
         "subtitle": "Computationele landschapsbeoordeling",
         "description": "Een AI-gestuurd systeem voor de beoordeling van landschapskwaliteit.",
         "upload": "Landschapsafbeeldingen uploaden",
@@ -355,7 +380,6 @@ TRANSLATIONS = {
     },
 
     "Russian": {
-        "title": "CLASS 2.0",
         "subtitle": "Компьютерная оценка ландшафта",
         "description": "Система на основе искусственного интеллекта для оценки качества ландшафта.",
         "upload": "Загрузить изображения ландшафта",
@@ -385,8 +409,23 @@ TRANSLATIONS = {
 
 
 # ============================================================
-# 3. LANGUAGE CODES
+# 5. LANGUAGE NAMES, FLAGS AND CODES
 # ============================================================
+
+LANGUAGE_DISPLAY = {
+    "English": "🇬🇧 English",
+    "French": "🇫🇷 Français",
+    "Italian": "🇮🇹 Italiano",
+    "German": "🇩🇪 Deutsch",
+    "Swedish": "🇸🇪 Svenska",
+    "Chinese": "🇨🇳 中文",
+    "Korean": "🇰🇷 한국어",
+    "Spanish": "🇪🇸 Español",
+    "Portuguese": "🇵🇹 Português",
+    "Danish": "🇩🇰 Dansk",
+    "Dutch": "🇳🇱 Nederlands",
+    "Russian": "🇷🇺 Русский"
+}
 
 LANGUAGE_CODES = {
     "English": "en",
@@ -405,53 +444,159 @@ LANGUAGE_CODES = {
 
 
 # ============================================================
-# 4. LANGUAGE SELECTION
+# 6. CUSTOM CSS
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+
+    .stApp {
+        background-color: #ffffff;
+    }
+
+    h1, h2, h3 {
+        color: #17324D;
+    }
+
+    p, label {
+        color: #334155;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }
+
+    [data-testid="stFileUploader"] {
+        border-radius: 12px;
+    }
+
+    .stDownloadButton button {
+        background-color: #176B3A;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+    }
+
+    .stDownloadButton button:hover {
+        background-color: #10532D;
+        color: white;
+    }
+
+    .stProgress > div > div > div {
+        background-color: #176B3A;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ============================================================
+# 7. LANGUAGE SELECTION
 # ============================================================
 
 if "language" not in st.session_state:
     st.session_state.language = "English"
 
+
 # ============================================================
-# 5. BRANDED NEUROLANDSCAPE HEADER
+# 8. NEUROLANDSCAPE HEADER
 # ============================================================
 
 logo_col, title_col, language_col = st.columns(
-    [1.5, 3.5, 2]
+    [1.5, 4, 2]
 )
+
+# LOGO
 
 with logo_col:
 
-    if LOGO_PATH.exists():
+    if logo_image is not None:
+
         st.image(
-            str(LOGO_PATH),
+            logo_image,
             width=190
         )
+
     else:
-        st.markdown("### NeuroLandscape")
+
+        st.markdown(
+            """
+            <div style="
+                padding-top: 20px;
+                color: #176B3A;
+                font-size: 23px;
+                font-weight: 700;
+            ">
+                NeuroLandscape
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+# CLASS 2.0 TITLE
 
 with title_col:
 
-    st.title("CLASS 2.0")
-    st.caption("NeuroLandscape | Digital Landscape Assessment")
+    st.markdown(
+        """
+        <div style="padding-top: 8px;">
+
+            <h1 style="
+                font-size: 42px;
+                font-weight: 750;
+                color: #17324D;
+                margin-bottom: 0px;
+            ">
+                CLASS 2.0
+            </h1>
+
+            <p style="
+                font-size: 17px;
+                color: #526477;
+                margin-top: 2px;
+            ">
+                NeuroLandscape | Digital Landscape Assessment
+            </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# LANGUAGE SELECTOR
 
 with language_col:
 
     st.selectbox(
-        "Interface Language / Langue / Sprache",
+        label="🌐",
         options=list(TRANSLATIONS.keys()),
-        key="language"
+        format_func=lambda language:
+            LANGUAGE_DISPLAY[language],
+        key="language",
+        label_visibility="collapsed"
     )
+
+
+# ============================================================
+# 9. ACTIVATE SELECTED LANGUAGE
+# ============================================================
 
 T = TRANSLATIONS[st.session_state.language]
 
 st.divider()
 
 st.subheader(T["subtitle"])
+
 st.write(T["description"])
 
 
 # ============================================================
-# 6. IMAGE PREPROCESSING
+# 10. IMAGE PREPROCESSING
 # ============================================================
 
 def preprocess_image(image: Image.Image) -> torch.Tensor:
@@ -475,7 +620,7 @@ def preprocess_image(image: Image.Image) -> torch.Tensor:
 
 
 # ============================================================
-# 7. LOAD CONTEXT EMBEDDINGS
+# 11. LOAD CONTEXT EMBEDDINGS
 # ============================================================
 
 @st.cache_resource
@@ -504,7 +649,7 @@ context_embeddings = load_context_embeddings()
 
 
 # ============================================================
-# 8. MODEL ARCHITECTURE
+# 12. MODEL ARCHITECTURE
 # ============================================================
 
 class MultiContextSwinRegressor(nn.Module):
@@ -513,11 +658,16 @@ class MultiContextSwinRegressor(nn.Module):
 
         super().__init__()
 
+        # Swin V2 B pretrained feature extractor
+
         self.swin = swin_v2_b(
             weights=Swin_V2_B_Weights.IMAGENET1K_V1
         )
 
         self.swin.head = nn.Identity()
+
+        # Context embeddings
+        # Preserve original checkpoint parameter structure.
 
         self.context_embeddings = nn.ParameterDict({
 
@@ -531,6 +681,8 @@ class MultiContextSwinRegressor(nn.Module):
             for label in context_embeddings
 
         })
+
+        # Per-dimension fusion heads
 
         self.fusion_heads = nn.ModuleDict({
 
@@ -552,6 +704,7 @@ class MultiContextSwinRegressor(nn.Module):
             for label in self.context_embeddings
 
         })
+
 
     def forward(self, image):
 
@@ -578,7 +731,7 @@ class MultiContextSwinRegressor(nn.Module):
 
 
 # ============================================================
-# 9. LOAD MODEL
+# 13. LOAD TRAINED MODEL
 # ============================================================
 
 @st.cache_resource
@@ -614,7 +767,7 @@ model = load_model()
 
 
 # ============================================================
-# 10. MULTILINGUAL USER INTERFACE
+# 14. MODEL STATUS AND IMAGE UPLOAD
 # ============================================================
 
 st.success(T["success"])
@@ -629,13 +782,15 @@ uploaded_files = st.file_uploader(
 
     accept_multiple_files=True,
 
-    help=T["upload_help"]
+    help=T["upload_help"],
+
+    key="landscape_uploader"
 
 )
 
 
 # ============================================================
-# 11. IMAGE PREDICTION
+# 15. IMAGE PREDICTION
 # ============================================================
 
 if uploaded_files:
@@ -645,6 +800,8 @@ if uploaded_files:
     progress = st.progress(0)
 
     status = st.empty()
+
+    status.info(T["processing"])
 
     for index, uploaded_file in enumerate(uploaded_files):
 
@@ -694,7 +851,7 @@ if uploaded_files:
 
 
     # ========================================================
-    # 12. MULTILINGUAL RESULTS
+    # 16. MULTILINGUAL RESULTS
     # ========================================================
 
     if results:
@@ -703,16 +860,18 @@ if uploaded_files:
 
         st.subheader(T["results"])
 
+        # Translated output headers
+
         headers = [
             T["image_name"]
         ] + T["dimensions"]
+
+        # Results DataFrame
 
         results_df = pd.DataFrame(
             results,
             columns=headers
         )
-
-        # Display results table
 
         st.dataframe(
             results_df,
@@ -722,7 +881,7 @@ if uploaded_files:
 
 
         # ====================================================
-        # 13. EXCEL-FRIENDLY CSV
+        # 17. EXCEL-FRIENDLY CSV
         # ====================================================
 
         csv_buffer = io.StringIO()
@@ -745,7 +904,7 @@ if uploaded_files:
 
 
         # ====================================================
-        # 14. MULTILINGUAL CSV DOWNLOAD
+        # 18. MULTILINGUAL CSV DOWNLOAD
         # ====================================================
 
         language_code = LANGUAGE_CODES[
@@ -758,10 +917,35 @@ if uploaded_files:
 
             data="\ufeff" + table_text,
 
-            file_name=f"CLASS2_predictions_{language_code}.csv",
+            file_name=(
+                f"CLASS2_predictions_{language_code}.csv"
+            ),
 
             mime="text/csv",
 
             use_container_width=True
 
         )
+
+
+# ============================================================
+# 19. NEUROLANDSCAPE FOOTER
+# ============================================================
+
+st.divider()
+
+st.markdown(
+    """
+    <div style="
+        text-align: center;
+        color: #8492A6;
+        font-size: 13px;
+        padding: 15px;
+    ">
+        NeuroLandscape | CLASS 2.0
+        <br>
+        Digital Landscape Assessment
+    </div>
+    """,
+    unsafe_allow_html=True
+)
